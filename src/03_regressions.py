@@ -24,12 +24,14 @@ try:
     MARKET_TICKER = config.MARKET_TICKER
     TABLE_DIR = config.TABLE_DIR
     SIGNIFICANCE_LEVEL = config.SIGNIFICANCE_LEVEL
+    HAC_LAGS = config.HAC_LAGS
 except (ImportError, ModuleNotFoundError):
     # Fallback defaults
     ASSETS = ["Msft", "GE", "Ford"]
     MARKET_TICKER = "SP500"
     TABLE_DIR = Path(__file__).parent.parent / "report" / "tables"
     SIGNIFICANCE_LEVEL = 0.05
+    HAC_LAGS = 10
 
 
 def run_capm_regression(y: pd.Series, X: pd.DataFrame, asset_name: str) -> dict:
@@ -79,18 +81,21 @@ def run_capm_regression(y: pd.Series, X: pd.DataFrame, asset_name: str) -> dict:
     return results_dict
 
 
-def extract_hac_results(model, asset_name: str, maxlags: int = 10) -> dict:
+def extract_hac_results(model, asset_name: str, maxlags: int = None) -> dict:
     """
     Extract HAC (Newey-West) robust standard errors and p-values from fitted OLS model.
     
     Args:
         model: Fitted OLS model from statsmodels
         asset_name: Name of asset for labeling
-        maxlags: Maximum number of lags for Newey-West (default: 10)
+        maxlags: Maximum number of lags for Newey-West (default: HAC_LAGS from config)
         
     Returns:
         Dictionary with HAC-robust regression results
     """
+    if maxlags is None:
+        maxlags = HAC_LAGS
+    
     # Get HAC robust covariance matrix results
     hac_results = model.get_robustcov_results(cov_type="HAC", maxlags=maxlags)
     
@@ -152,7 +157,7 @@ def capm_regression_all_assets(df: pd.DataFrame,
     market_excess = df[f'{market}_Excess']
     
     print("\n=== CAPM REGRESSION RESULTS ===\n")
-    print("Standard errors reported with HAC (Newey-West, maxlags=10) correction\n")
+    print(f"Standard errors reported with HAC (Newey-West, maxlags={HAC_LAGS}) correction\n")
     
     for asset in assets:
         asset_excess = df[f'{asset}_Excess']
@@ -167,7 +172,7 @@ def capm_regression_all_assets(df: pd.DataFrame,
         results_ols.append(result_dict)
         
         # Extract HAC-robust results
-        hac_dict = extract_hac_results(model, asset.upper(), maxlags=10)
+        hac_dict = extract_hac_results(model, asset.upper())
         results_hac.append(hac_dict)
         
         # Print summary for each asset (using HAC p-values)

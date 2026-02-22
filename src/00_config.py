@@ -24,6 +24,7 @@ CSV_PATH = DATA_DIR / "findat.csv"
 # Analysis constants
 TRADING_DAYS = 252
 SIGNIFICANCE_LEVEL = 0.05
+HAC_LAGS = 10  # Newey-West HAC lag length
 
 # Asset names (match column names from data)
 ASSETS = ["Msft", "GE", "Ford"]
