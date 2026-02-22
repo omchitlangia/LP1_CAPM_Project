@@ -41,15 +41,25 @@ capm_regression_all_assets = regressions.capm_regression_all_assets
 save_regression_results = regressions.save_regression_results
 create_all_scatter_plots = plots.create_all_scatter_plots
 
-# Import diagnostics and robustness
+# Import diagnostics, robustness, descriptive stats, master summary, and residual plots
 diagnostics = importlib.import_module('04_diagnostics')
 robustness = importlib.import_module('05_robustness')
+desc_stats = importlib.import_module('07_descriptive_stats')
+master_summary = importlib.import_module('08_master_summary')
+residual_plots = importlib.import_module('09_residual_plots')
 
 run_all_diagnostics = diagnostics.run_all_diagnostics
 save_diagnostics = diagnostics.save_diagnostics
 run_all_subperiods = robustness.run_all_subperiods
 save_subperiod_results = robustness.save_subperiod_results
 compute_all_rolling_betas = robustness.compute_all_rolling_betas
+compute_all_descriptive_stats = desc_stats.compute_all_descriptive_stats
+save_descriptive_stats = desc_stats.save_descriptive_stats
+build_master_summary = master_summary.build_master_summary
+load_all_results = master_summary.load_all_results
+sanity_check = master_summary.sanity_check
+save_master_summary = master_summary.save_master_summary
+create_all_residual_plots = residual_plots.create_all_residual_plots
 
 
 def run_pipeline():
@@ -94,6 +104,16 @@ def run_pipeline():
         print(f"  ✗ Error running regressions: {e}")
         return False
     
+    # Step 3.5: Compute descriptive statistics
+    print("\n[STEP 3.5] Computing descriptive statistics...")
+    try:
+        stats_df = compute_all_descriptive_stats(df)
+        stats_file = save_descriptive_stats(stats_df)
+        print(f"  ✓ Completed descriptive statistics")
+    except Exception as e:
+        print(f"  ✗ Error computing descriptive statistics: {e}")
+        return False
+    
     # Step 4: Generate plots
     print("\n[STEP 4] Generating scatter plots with fit lines...")
     try:
@@ -127,6 +147,27 @@ def run_pipeline():
         print(f"  ✗ Error running robustness tests: {e}")
         return False
     
+    # Step 7: Build master summary table
+    print("\n[STEP 7] Building master summary table...")
+    try:
+        hac_df, diag_df, subperiod_df, desc_df = load_all_results()
+        master_df = build_master_summary(hac_df, diag_df, subperiod_df, desc_df)
+        sanity_check(master_df, hac_df)
+        master_file = save_master_summary(master_df)
+        print(f"  ✓ Completed master summary")
+    except Exception as e:
+        print(f"  ✗ Error building master summary: {e}")
+        return False
+    
+    # Step 8: Generate residual diagnostic plots
+    print("\n[STEP 8] Generating residual diagnostic plots...")
+    try:
+        residual_plot_paths = create_all_residual_plots(df)
+        print(f"  ✓ Generated {len(residual_plot_paths)} residual diagnostic plots")
+    except Exception as e:
+        print(f"  ✗ Error generating residual plots: {e}")
+        return False
+    
     # Summary
     print("\n" + "=" * 70)
     print("PIPELINE COMPLETED SUCCESSFULLY")
@@ -136,8 +177,10 @@ def run_pipeline():
     print(f"\nRegression & Analysis Tables:")
     print(f"  {ols_file}")
     print(f"  {hac_file}")
+    print(f"  {stats_file}")
     print(f"  {TABLE_DIR / 'capm_diagnostics.csv'}")
     print(f"  {TABLE_DIR / 'capm_subperiod_results.csv'}")
+    print(f"  {master_file} *** MASTER SUMMARY ***")
     
     print(f"\nCharacteristic Line Scatter Plots (PNG):")
     for plot_path in saved_plots:
@@ -145,6 +188,10 @@ def run_pipeline():
     
     print(f"\nRolling Beta Plots (PNG):")
     for plot_path in rolling_plots:
+        print(f"  {plot_path}")
+    
+    print(f"\nResidual Diagnostic Plots (PNG):")
+    for plot_path in residual_plot_paths:
         print(f"  {plot_path}")
     
     print(f"\nData shape: {df.shape}")

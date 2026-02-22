@@ -106,13 +106,13 @@ def run_diagnostics(y: pd.Series, X: np.ndarray, residuals: np.ndarray, asset_na
         y: Dependent variable (excess return)
         X: Design matrix with intercept
         residuals: Model residuals
-        asset_name: Name of asset
+        asset_name: Name of asset (will be normalized to uppercase)
         
     Returns:
         Dictionary with diagnostic statistics
     """
     results_dict = {
-        'Asset': asset_name,
+        'Asset': asset_name.upper(),  # Normalize to uppercase
         'BP_pvalue': compute_breusch_pagan(residuals, X),
         'DW_stat': compute_durbin_watson(residuals),
         'LB_pvalue_lag5': compute_ljung_box_pvalue(residuals, lags=5),
@@ -181,6 +181,21 @@ def save_diagnostics(diagnostics_df: pd.DataFrame, output_file: Path = None) -> 
     Returns:
         Path to saved file
     """
+    # Sanity check: verify we have all 3 assets
+    expected_assets = set([a.upper() for a in ASSETS])
+    actual_assets = set(diagnostics_df['Asset'].values)
+    
+    if expected_assets != actual_assets:
+        missing = expected_assets - actual_assets
+        extra = actual_assets - expected_assets
+        if missing:
+            raise ValueError(f"Missing assets in diagnostics: {missing}")
+        if extra:
+            raise ValueError(f"Unexpected assets in diagnostics: {extra}")
+    
+    assert len(diagnostics_df) == 3, f"Expected 3 assets, got {len(diagnostics_df)}"
+    print(f"✓ Diagnostics has all {len(diagnostics_df)} expected assets")
+    
     if output_file is None:
         output_file = TABLE_DIR / "capm_diagnostics.csv"
     
