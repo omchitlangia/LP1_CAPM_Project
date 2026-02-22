@@ -41,6 +41,16 @@ capm_regression_all_assets = regressions.capm_regression_all_assets
 save_regression_results = regressions.save_regression_results
 create_all_scatter_plots = plots.create_all_scatter_plots
 
+# Import diagnostics and robustness
+diagnostics = importlib.import_module('04_diagnostics')
+robustness = importlib.import_module('05_robustness')
+
+run_all_diagnostics = diagnostics.run_all_diagnostics
+save_diagnostics = diagnostics.save_diagnostics
+run_all_subperiods = robustness.run_all_subperiods
+save_subperiod_results = robustness.save_subperiod_results
+compute_all_rolling_betas = robustness.compute_all_rolling_betas
+
 
 def run_pipeline():
     """Execute the complete CAPM analysis pipeline."""
@@ -93,16 +103,47 @@ def run_pipeline():
         print(f"  ✗ Error generating plots: {e}")
         return False
     
+    # Step 5: Run diagnostic tests
+    print("\n[STEP 5] Running diagnostic tests...")
+    try:
+        diagnostics_df = run_all_diagnostics(df, models)
+        save_diagnostics(diagnostics_df)
+        print(f"  ✓ Completed diagnostics for {len(models)} assets")
+    except Exception as e:
+        print(f"  ✗ Error running diagnostics: {e}")
+        return False
+    
+    # Step 6: Run robustness tests
+    print("\n[STEP 6] Running robustness tests...")
+    try:
+        # Subperiod analysis
+        subperiod_df = run_all_subperiods(df)
+        save_subperiod_results(subperiod_df)
+        
+        # Rolling beta analysis
+        rolling_betas, rolling_plots = compute_all_rolling_betas(df)
+        print(f"  ✓ Completed robustness checks ({len(rolling_plots)} rolling beta plots)")
+    except Exception as e:
+        print(f"  ✗ Error running robustness tests: {e}")
+        return False
+    
     # Summary
     print("\n" + "=" * 70)
     print("PIPELINE COMPLETED SUCCESSFULLY")
     print("=" * 70)
     
     print("\n[OUTPUT SUMMARY]")
-    print(f"\nRegression Results Table:")
+    print(f"\nRegression & Analysis Tables:")
     print(f"  {TABLE_DIR / 'capm_regression_results.csv'}")
-    print(f"\nScatter Plots (PNG):")
+    print(f"  {TABLE_DIR / 'capm_diagnostics.csv'}")
+    print(f"  {TABLE_DIR / 'capm_subperiod_results.csv'}")
+    
+    print(f"\nCharacteristic Line Scatter Plots (PNG):")
     for plot_path in saved_plots:
+        print(f"  {plot_path}")
+    
+    print(f"\nRolling Beta Plots (PNG):")
+    for plot_path in rolling_plots:
         print(f"  {plot_path}")
     
     print(f"\nData shape: {df.shape}")
