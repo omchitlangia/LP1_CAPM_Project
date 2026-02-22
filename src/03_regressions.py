@@ -79,11 +79,63 @@ def run_capm_regression(y: pd.Series, X: pd.DataFrame, asset_name: str) -> dict:
     return results_dict
 
 
+def extract_hac_results(model, asset_name: str, maxlags: int = 10) -> dict:
+    """
+    Extract HAC (Newey-West) robust standard errors and p-values from fitted OLS model.
+    
+    Args:
+        model: Fitted OLS model from statsmodels
+        asset_name: Name of asset for labeling
+        maxlags: Maximum number of lags for Newey-West (default: 10)
+        
+    Returns:
+        Dictionary with HAC-robust regression results
+    """
+    # Get HAC robust covariance matrix results
+    hac_results = model.get_robustcov_results(cov_type="HAC", maxlags=maxlags)
+    
+    # Extract HAC-robust standard errors and p-values
+    # Handle both Series and ndarray access patterns
+    if hasattr(model.params, 'iloc'):
+        alpha = model.params.iloc[0]
+        beta = model.params.iloc[1]
+    else:
+        alpha = model.params[0]
+        beta = model.params[1]
+    
+    if hasattr(hac_results.pvalues, 'iloc'):
+        alpha_pvalue = hac_results.pvalues.iloc[0]
+        beta_pvalue = hac_results.pvalues.iloc[1]
+    else:
+        alpha_pvalue = hac_results.pvalues[0]
+        beta_pvalue = hac_results.pvalues[1]
+    
+    r_squared = model.rsquared
+    adj_r_squared = model.rsquared_adj
+    
+    # Check if alpha is significantly different from 0 at 5% level
+    alpha_significant = (alpha_pvalue < SIGNIFICANCE_LEVEL)
+    
+    results_dict = {
+        'Asset': asset_name,
+        'Alpha': alpha,
+        'Alpha_PValue': alpha_pvalue,
+        'Alpha_Significant': alpha_significant,
+        'Beta': beta,
+        'Beta_PValue': beta_pvalue,
+        'R_Squared': r_squared,
+        'Adj_R_Squared': adj_r_squared,
+        'N_Obs': len(model.resid),
+    }
+    
+    return results_dict
+
+
 def capm_regression_all_assets(df: pd.DataFrame, 
                                 assets: list = ASSETS,
-                                market: str = MARKET_TICKER) -> pd.DataFrame:
+                                market: str = MARKET_TICKER) -> tuple:
     """
-    Run CAPM regression for all assets.
+    Run CAPM regression for all assets using OLS.
     
     Args:
         df: DataFrame with excess returns
@@ -91,60 +143,88 @@ def capm_regression_all_assets(df: pd.DataFrame,
         market: Market ticker
         
     Returns:
-        DataFrame with regression summary (without model object)
+        Tuple: (DataFrame with OLS results, dict of fitted models, dict of HAC results)
     """
-    results = []
+    results_ols = []
+    results_hac = []
     models = {}
     
     market_excess = df[f'{market}_Excess']
     
     print("\n=== CAPM REGRESSION RESULTS ===\n")
+    print("Standard errors reported with HAC (Newey-West, maxlags=10) correction\n")
     
     for asset in assets:
         asset_excess = df[f'{asset}_Excess']
         
+        # Run OLS regression
         result_dict = run_capm_regression(asset_excess, market_excess, asset)
-        models[asset] = result_dict.pop('Model')
+        model = result_dict.pop('Model')
+        models[asset] = model
         
-        results.append(result_dict)
+        # Normalize asset name to uppercase for output
+        result_dict['Asset'] = asset.upper()
+        results_ols.append(result_dict)
         
-        # Print summary for each asset
+        # Extract HAC-robust results
+        hac_dict = extract_hac_results(model, asset.upper(), maxlags=10)
+        results_hac.append(hac_dict)
+        
+        # Print summary for each asset (using HAC p-values)
         print(f"\n{asset.upper()}")
         print("-" * 60)
         print(f"Alpha (intercept):        {result_dict['Alpha']:.6f}")
-        print(f"  p-value:                {result_dict['Alpha_PValue']:.4f}")
-        print(f"  Significant at 5%?      {result_dict['Alpha_Significant']}")
+        print(f"  p-value (HAC):          {hac_dict['Alpha_PValue']:.4f}")
         print(f"Beta (slope):             {result_dict['Beta']:.6f}")
-        print(f"  p-value:                {result_dict['Beta_PValue']:.4f}")
+        print(f"  p-value (HAC):          {hac_dict['Beta_PValue']:.4f}")
         print(f"R-squared:                {result_dict['R_Squared']:.4f}")
         print(f"Adj R-squared:            {result_dict['Adj_R_Squared']:.4f}")
         print(f"Observations:             {result_dict['N_Obs']}")
     
-    results_df = pd.DataFrame(results)
+    results_ols_df = pd.DataFrame(results_ols)
+    results_hac_df = pd.DataFrame(results_hac)
     
-    return results_df, models
+    return results_ols_df, results_hac_df, models
 
 
-def save_regression_results(results_df: pd.DataFrame, output_file: Path = None) -> Path:
+def save_regression_results(results_ols_df: pd.DataFrame, 
+                            results_hac_df: pd.DataFrame = None,
+                            ols_output_file: Path = None,
+                            hac_output_file: Path = None) -> tuple:
     """
-    Save regression results to CSV file.
+    Save regression results (OLS and HAC) to CSV files.
     
     Args:
-        results_df: DataFrame with regression results
-        output_file: Path to save CSV (default: report/tables/capm_regression_results.csv)
+        results_ols_df: DataFrame with OLS regression results
+        results_hac_df: DataFrame with HAC regression results
+        ols_output_file: Path to save OLS CSV (default: report/tables/capm_regression_results_ols.csv)
+        hac_output_file: Path to save HAC CSV (default: report/tables/capm_regression_results_hac.csv)
         
     Returns:
-        Path to saved file
+        Tuple of (OLS file path, HAC file path)
     """
-    if output_file is None:
-        output_file = TABLE_DIR / "capm_regression_results.csv"
+    if ols_output_file is None:
+        ols_output_file = TABLE_DIR / "capm_regression_results_ols.csv"
     
-    output_file.parent.mkdir(parents=True, exist_ok=True)
+    if hac_output_file is None:
+        hac_output_file = TABLE_DIR / "capm_regression_results_hac.csv"
     
-    results_df.to_csv(output_file, index=False)
-    print(f"\n✓ Regression results saved to: {output_file}")
+    ols_output_file.parent.mkdir(parents=True, exist_ok=True)
     
-    return output_file
+    # Save OLS results
+    ols_output_df = results_ols_df[['Asset', 'Alpha', 'Alpha_PValue', 'Beta', 'Beta_PValue', 'R_Squared', 'Adj_R_Squared', 'N_Obs']].copy()
+    ols_output_df.columns = ['Asset', 'Alpha', 'Alpha_pvalue', 'Beta', 'Beta_pvalue', 'R_Squared', 'Adj_R_Squared', 'N_Obs']
+    ols_output_df.to_csv(ols_output_file, index=False)
+    print(f"\n✓ OLS results saved to: {ols_output_file}")
+    
+    # Save HAC results if provided
+    if results_hac_df is not None:
+        hac_output_df = results_hac_df[['Asset', 'Alpha', 'Alpha_PValue', 'Beta', 'Beta_PValue', 'R_Squared', 'Adj_R_Squared', 'N_Obs']].copy()
+        hac_output_df.columns = ['Asset', 'Alpha', 'Alpha_pvalue', 'Beta', 'Beta_pvalue', 'R_Squared', 'Adj_R_Squared', 'N_Obs']
+        hac_output_df.to_csv(hac_output_file, index=False)
+        print(f"✓ HAC results saved to:  {hac_output_file}")
+    
+    return ols_output_file, hac_output_file
 
 
 def main():
@@ -155,13 +235,16 @@ def main():
     df = load_and_clean(source="csv")
     df = compute_returns_and_excess(df)
     
-    results_df, models = capm_regression_all_assets(df)
-    save_regression_results(results_df)
+    results_ols_df, results_hac_df, models = capm_regression_all_assets(df)
+    save_regression_results(results_ols_df, results_hac_df)
     
-    print("\n=== Summary ===")
-    print(results_df[['Asset', 'Alpha', 'Alpha_PValue', 'Beta', 'R_Squared']])
+    print("\n=== OLS Summary ===")
+    print(results_ols_df[['Asset', 'Alpha', 'Alpha_PValue', 'Beta', 'R_Squared']])
     
-    return results_df, models
+    print("\n=== HAC Summary ===")
+    print(results_hac_df[['Asset', 'Alpha', 'Alpha_PValue', 'Beta', 'R_Squared']])
+    
+    return results_ols_df, results_hac_df, models
 
 
 if __name__ == "__main__":

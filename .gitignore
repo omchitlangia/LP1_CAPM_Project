@@ -34,10 +34,6 @@ coverage.xml
 .ipynb_checkpoints/
 *.ipynb_checkpoints
 
-# Generated outputs (comment out if you want to commit tables/figures)
-report/tables/*.csv
-report/figures/*.png
-
 # OS
 .DS_Store
 Thumbs.db

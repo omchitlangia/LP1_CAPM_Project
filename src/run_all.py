@@ -84,11 +84,11 @@ def run_pipeline():
         print(f"  ✗ Error computing returns: {e}")
         return False
     
-    # Step 3: Run CAPM regressions
-    print("\n[STEP 3] Running CAPM OLS regressions...")
+    # Step 3: Run CAPM regressions (OLS and HAC)
+    print("\n[STEP 3] Running CAPM OLS regressions (with HAC robust inference)...")
     try:
-        results_df, models = capm_regression_all_assets(df)
-        save_regression_results(results_df)
+        results_ols_df, results_hac_df, models = capm_regression_all_assets(df)
+        ols_file, hac_file = save_regression_results(results_ols_df, results_hac_df)
         print(f"  ✓ Completed regressions for {len(models)} assets")
     except Exception as e:
         print(f"  ✗ Error running regressions: {e}")
@@ -134,7 +134,8 @@ def run_pipeline():
     
     print("\n[OUTPUT SUMMARY]")
     print(f"\nRegression & Analysis Tables:")
-    print(f"  {TABLE_DIR / 'capm_regression_results.csv'}")
+    print(f"  {ols_file}")
+    print(f"  {hac_file}")
     print(f"  {TABLE_DIR / 'capm_diagnostics.csv'}")
     print(f"  {TABLE_DIR / 'capm_subperiod_results.csv'}")
     
