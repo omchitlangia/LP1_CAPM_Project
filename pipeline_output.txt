@@ -1,0 +1,343 @@
+/Users/omchitlangia/Desktop/LP1_CAPM_Project/src/01_load_and_clean.py:107: UserWarning: Could not infer format, so each element will be parsed individually, falling back to `dateutil`. To ensure parsing is consistent and as-expected, please specify a format.
+  df[date_col] = pd.to_datetime(df[date_col])
+======================================================================
+CAPM LP1 ANALYSIS - MASTER PIPELINE (with distribution & validation)
+======================================================================
+
+[STEP 0] Creating output directories...
+  ✓ Report dir: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report
+  ✓ Figures dir: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures
+  ✓ Tables dir: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables
+
+[STEP 1] Loading and cleaning data...
+Loaded data from /Users/omchitlangia/Desktop/LP1_CAPM_Project/data/findat.csv
+Shape before cleaning: (2363, 6)
+Shape after cleaning: (2363, 6)
+  ✓ Loaded data shape: (2363, 6)
+
+[STEP 2] Computing log returns + simple returns and excess returns...
+Computing daily risk-free rate...
+Computing log returns...
+Computing excess log returns...
+Computing simple returns...
+Computing excess simple returns...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_excess_log.csv
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_excess_simple.csv
+Data shape after returns computation: (2362, 23)
+  ✓ Computed all return types and excess returns
+
+[STEP 3] Running CAPM OLS regressions (with HAC robust inference)...
+
+=== CAPM REGRESSION RESULTS ===
+
+Standard errors reported with HAC (Newey-West, maxlags=10) correction
+
+
+MSFT
+------------------------------------------------------------
+Alpha (intercept):        0.000696
+  p-value (HAC):          0.0741
+Beta (slope):             1.244493
+  p-value (HAC):          0.0000
+R-squared:                0.3434
+Adj R-squared:            0.3431
+Observations:             2362
+
+GE
+------------------------------------------------------------
+Alpha (intercept):        0.000310
+  p-value (HAC):          0.1713
+Beta (slope):             1.244128
+  p-value (HAC):          0.0000
+R-squared:                0.5591
+Adj R-squared:            0.5589
+Observations:             2362
+
+FORD
+------------------------------------------------------------
+Alpha (intercept):        -0.000277
+  p-value (HAC):          0.4367
+Beta (slope):             0.973173
+  p-value (HAC):          0.0000
+R-squared:                0.2400
+Adj R-squared:            0.2397
+Observations:             2362
+
+✓ OLS results saved to: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_regression_results_ols.csv
+✓ HAC results saved to:  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_regression_results_hac.csv
+  ✓ Completed regressions for 3 assets (LOG returns)
+
+[STEP 3.5] Computing descriptive statistics...
+
+=== DESCRIPTIVE STATISTICS ===
+
+Series    N      Mean      Std       Min      Max      Skew  Kurtosis
+ SP500 2362  0.000093 0.011557 -0.071324 0.055679 -0.098006  3.247357
+  MSFT 2362  0.000811 0.024546 -0.169914 0.178583 -0.103507  3.949379
+    GE 2362  0.000425 0.019230 -0.113093 0.117395  0.025428  3.066506
+  FORD 2362 -0.000187 0.022959 -0.158794 0.144849  0.117800  3.952151
+
+✓ Descriptive statistics saved to: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/descriptive_stats.csv
+  ✓ Completed descriptive statistics
+
+[STEP 4] Generating scatter plots with fit lines...
+
+=== Creating Scatter Plots ===
+
+✓ Saved plot: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_scatter.png
+✓ Saved plot: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_scatter.png
+✓ Saved plot: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_scatter.png
+  ✓ Generated 3 scatter plots
+
+[STEP 5] Running diagnostic tests...
+
+=== DIAGNOSTIC TESTS ===
+
+MSFT
+------------------------------------------------------------
+Breusch-Pagan p-value:        0.7234
+  Heteroskedastic (5%)?       False
+Durbin-Watson statistic:      2.0214
+Ljung-Box p-value (lag 5):    0.3197
+Ljung-Box p-value (lag 10):   0.3988
+Observations:                 2362
+
+GE
+------------------------------------------------------------
+Breusch-Pagan p-value:        0.4224
+  Heteroskedastic (5%)?       False
+Durbin-Watson statistic:      2.0496
+Ljung-Box p-value (lag 5):    0.0069
+Ljung-Box p-value (lag 10):   0.0361
+Observations:                 2362
+
+FORD
+------------------------------------------------------------
+Breusch-Pagan p-value:        0.0247
+  Heteroskedastic (5%)?       True
+Durbin-Watson statistic:      2.2601
+Ljung-Box p-value (lag 5):    0.0000
+Ljung-Box p-value (lag 10):   0.0000
+Observations:                 2362
+
+✓ Diagnostics has all 3 expected assets
+✓ Diagnostic results saved to: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_diagnostics.csv
+  ✓ Completed diagnostics for 3 assets
+
+[STEP 6] Running robustness tests...
+
+=== SUBPERIOD CAPM REGRESSIONS ===
+
+MSFT
+------------------------------------------------------------
+Period 1993-01-01 to 1997-12-31:
+  Beta: 1.2902 (p=0.0000)
+  Alpha: 0.000932 (p=0.0745)
+  R²: 0.2639, N=1047
+Period 1998-01-01 to 2000-12-31:
+  Beta: 1.3409 (p=0.0000)
+  Alpha: -0.000088 (p=0.9157)
+  R²: 0.3621, N=755
+Period 2001-01-01 to 2003-12-31:
+  Beta: 1.1302 (p=0.0000)
+  Alpha: 0.001149 (p=0.1939)
+  R²: 0.4011, N=560
+
+GE
+------------------------------------------------------------
+Period 1993-01-01 to 1997-12-31:
+  Beta: 1.2321 (p=0.0000)
+  Alpha: 0.000340 (p=0.2407)
+  R²: 0.5146, N=1047
+Period 1998-01-01 to 2000-12-31:
+  Beta: 1.0968 (p=0.0000)
+  Alpha: 0.000514 (p=0.3262)
+  R²: 0.4883, N=755
+Period 2001-01-01 to 2003-12-31:
+  Beta: 1.3914 (p=0.0000)
+  Alpha: 0.000153 (p=0.8147)
+  R²: 0.6508, N=560
+
+FORD
+------------------------------------------------------------
+Period 1993-01-01 to 1997-12-31:
+  Beta: 0.9474 (p=0.0000)
+  Alpha: -0.000093 (p=0.8377)
+  R²: 0.2040, N=1047
+Period 1998-01-01 to 2000-12-31:
+  Beta: 0.8951 (p=0.0000)
+  Alpha: 0.000101 (p=0.9001)
+  R²: 0.2122, N=755
+Period 2001-01-01 to 2003-12-31:
+  Beta: 1.0576 (p=0.0000)
+  Alpha: -0.001015 (p=0.3408)
+  R²: 0.2877, N=560
+
+✓ Subperiod results saved to: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_subperiod_results.csv
+
+=== ROLLING BETA ESTIMATION (252-day window) ===
+
+✓ Saved plot: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_rolling_beta.png
+✓ Saved plot: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_rolling_beta.png
+✓ Saved plot: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_rolling_beta.png
+  ✓ Completed robustness checks (3 rolling beta plots)
+
+[STEP 7] Building master summary table...
+
+=== SANITY CHECKS ===
+
+✓ All 3 expected assets present: {'GE', 'MSFT', 'FORD'}
+✓ N consistent across all assets: 2362
+✓ No missing values in 11 key columns
+✓ Beta values match between HAC and master summary
+
+✓ Master summary saved to: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_master_summary.csv
+  ✓ Completed master summary
+
+[STEP 8] Generating residual diagnostic plots...
+
+=== RESIDUAL DIAGNOSTIC PLOTS ===
+
+MSFT
+  ✓ Saved: MSFT_residuals_timeseries.png
+  ✓ Saved: MSFT_residuals_vs_fitted.png
+  ✓ Saved: MSFT_qqplot.png
+  ✓ Saved: MSFT_residuals_acf.png
+GE
+  ✓ Saved: GE_residuals_timeseries.png
+  ✓ Saved: GE_residuals_vs_fitted.png
+  ✓ Saved: GE_qqplot.png
+  ✓ Saved: GE_residuals_acf.png
+FORD
+  ✓ Saved: FORD_residuals_timeseries.png
+  ✓ Saved: FORD_residuals_vs_fitted.png
+  ✓ Saved: FORD_qqplot.png
+  ✓ Saved: FORD_residuals_acf.png
+  ✓ Generated 12 residual diagnostic plots
+
+[STEP 9] Running distribution validation (LOG + SIMPLE returns)...
+
+=== Distribution Validation: LOG RETURNS ===
+
+Processing MSFT (LOG)...
+  ✓ MSFT: N=2362, Skew=-0.2886, Kurt=9.1281, JB_p=0.0000
+Processing GE (LOG)...
+  ✓ GE: N=2362, Skew=0.0383, Kurt=5.7109, JB_p=0.0000
+Processing FORD (LOG)...
+  ✓ FORD: N=2362, Skew=0.0676, Kurt=6.8658, JB_p=0.0000
+
+=== Distribution Validation: SIMPLE RETURNS ===
+
+Processing MSFT (SIMPLE)...
+  ✓ MSFT: N=2362, Skew=-0.0332, Kurt=8.5888, JB_p=0.0000
+Processing GE (SIMPLE)...
+  ✓ GE: N=2362, Skew=0.1497, Kurt=5.7569, JB_p=0.0000
+Processing FORD (SIMPLE)...
+  ✓ FORD: N=2362, Skew=0.2610, Kurt=7.0986, JB_p=0.0000
+✓ Created /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/residual_distribution_tests.csv
+  ✓ Completed distribution validation for all assets
+
+[STEP 10] Creating residual histograms (LOG + SIMPLE returns)...
+
+=== Creating Residual Histograms: LOG RETURNS ===
+
+Creating histogram for MSFT (LOG)...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residual_hist_LOG.png
+Creating histogram for GE (LOG)...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residual_hist_LOG.png
+Creating histogram for FORD (LOG)...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residual_hist_LOG.png
+
+=== Creating Residual Histograms: SIMPLE RETURNS ===
+
+Creating histogram for MSFT (SIMPLE)...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residual_hist_SIMPLE.png
+Creating histogram for GE (SIMPLE)...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residual_hist_SIMPLE.png
+Creating histogram for FORD (SIMPLE)...
+  ✓ Saved: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residual_hist_SIMPLE.png
+  ✓ Generated 6 residual histogram plots
+
+[STEP 11] Building CAPM validation summary (LOG + SIMPLE)...
+
+=== Computing HAC Results for SIMPLE Returns ===
+
+✓ MSFT: Alpha=0.000914 (p=0.0187), Beta=1.2480, R²=0.3446
+✓ GE: Alpha=0.000412 (p=0.0688), Beta=1.2463, R²=0.5594
+✓ FORD: Alpha=-0.000078 (p=0.8261), Beta=0.9734, R²=0.2390
+
+✓ Saved validation summary: /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_validation_summary.csv
+  ✓ Completed CAPM validation summary
+
+======================================================================
+PIPELINE COMPLETED SUCCESSFULLY
+======================================================================
+
+[OUTPUT SUMMARY]
+
+Regression & Analysis Tables (Existing):
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_regression_results_ols.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_regression_results_hac.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/descriptive_stats.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_diagnostics.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_subperiod_results.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_master_summary.csv *** MASTER SUMMARY ***
+
+New: Distribution & Validation Tables:
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/residual_distribution_tests.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_validation_summary.csv
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_excess_log.csv (intermediate)
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/tables/capm_excess_simple.csv (intermediate)
+
+Characteristic Line Scatter Plots (PNG):
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_scatter.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_scatter.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_scatter.png
+
+Rolling Beta Plots (PNG):
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_rolling_beta.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_rolling_beta.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_rolling_beta.png
+
+Residual Diagnostic Plots (PNG):
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residuals_timeseries.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residuals_vs_fitted.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_qqplot.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residuals_acf.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residuals_timeseries.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residuals_vs_fitted.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_qqplot.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residuals_acf.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residuals_timeseries.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residuals_vs_fitted.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_qqplot.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residuals_acf.png
+
+New: Residual Histograms (LOG + SIMPLE) (PNG):
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residual_hist_LOG.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residual_hist_LOG.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residual_hist_LOG.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/MSFT_residual_hist_SIMPLE.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/GE_residual_hist_SIMPLE.png
+  /Users/omchitlangia/Desktop/LP1_CAPM_Project/report/figures/FORD_residual_hist_SIMPLE.png
+
+Data shape: (2362, 23)
+Analysis period: 1993-11-02 to 2003-04-03
+
+[FIRST ROWS OF NEW OUTPUTS]
+
+Residual Distribution Tests (first 4 rows):
+Return_Type Asset      Skew  Kurtosis  Excess_Kurtosis     JB_stat     JB_pvalue  Shapiro_stat  Shapiro_pvalue  N_obs                              Interpretation
+        LOG  MSFT -0.288588  9.128099         6.128099 3728.685193  0.000000e+00      0.954136    1.287805e-26   2362      fat tails; left-skew; reject normality
+        LOG    GE  0.038264  5.710927         2.710927  723.852777 6.566995e-158      0.973685    1.928627e-20   2362 fat tails; near-symmetric; reject normality
+        LOG  FORD  0.067596  6.865823         3.865823 1472.595344  0.000000e+00      0.963658    6.347353e-24   2362 fat tails; near-symmetric; reject normality
+     SIMPLE  MSFT -0.033234  8.588836         5.588836 3074.488297  0.000000e+00      0.956187    4.479205e-26   2362 fat tails; near-symmetric; reject normality
+
+CAP Validation Summary (first 4 rows):
+Return_Type Asset  Alpha_HAC  Alpha_p_HAC  Beta_HAC       R2  Heteroskedasticity_flag  Autocorr_flag  Normality_reject  Beta_stability_range                                                                                                     CAPM_validated_statement
+        LOG  MSFT   0.000696     0.074080  1.244493 0.343363                    False          False              True              0.210674 Alpha not significant → no strong evidence against CAPM in alpha-test sense. Beta varies across regimes → stability concern.
+        LOG    GE   0.000310     0.171345  1.244128 0.559118                    False          False              True              0.294577 Alpha not significant → no strong evidence against CAPM in alpha-test sense. Beta varies across regimes → stability concern.
+        LOG  FORD  -0.000277     0.436673  0.973173 0.239997                    False          False              True              0.162507                                                 Alpha not significant → no strong evidence against CAPM in alpha-test sense.
+     SIMPLE  MSFT   0.000914     0.018663  1.247979 0.344636                    False          False              True              0.210674     Alpha significant → CAPM rejected in alpha-test sense (abnormal return). Beta varies across regimes → stability concern.
+
+======================================================================

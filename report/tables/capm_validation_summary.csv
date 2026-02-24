@@ -1,0 +1,7 @@
+Return_Type,Asset,Alpha_HAC,Alpha_p_HAC,Beta_HAC,R2,Heteroskedasticity_flag,Autocorr_flag,Normality_reject,Beta_stability_range,CAPM_validated_statement
+LOG,MSFT,0.0006962171644343,0.0740802723264273,1.2444926604191349,0.3433629242668291,False,False,True,0.2106740023694864,Alpha not significant → no strong evidence against CAPM in alpha-test sense. Beta varies across regimes → stability concern.
+LOG,GE,0.0003100969517514,0.1713454514527023,1.2441284248981808,0.559117541063713,False,False,True,0.2945769455305991,Alpha not significant → no strong evidence against CAPM in alpha-test sense. Beta varies across regimes → stability concern.
+LOG,FORD,-0.0002769313311904,0.4366730813909222,0.9731734515305748,0.2399967508771696,False,False,True,0.16250732854425842,Alpha not significant → no strong evidence against CAPM in alpha-test sense.
+SIMPLE,MSFT,0.0009142847088867418,0.01866266855941113,1.247978783067309,0.34463605063495695,False,False,True,0.2106740023694864,Alpha significant → CAPM rejected in alpha-test sense (abnormal return). Beta varies across regimes → stability concern.
+SIMPLE,GE,0.00041182837291088017,0.06878512322762721,1.2463002870975946,0.5593619607093285,False,False,True,0.2945769455305991,Alpha not significant → no strong evidence against CAPM in alpha-test sense. Beta varies across regimes → stability concern.
+SIMPLE,FORD,-7.818097581815696e-05,0.8260910898314747,0.9734047321814012,0.23895684932453776,False,False,True,0.16250732854425842,Alpha not significant → no strong evidence against CAPM in alpha-test sense.

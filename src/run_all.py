@@ -3,9 +3,12 @@ Master pipeline script for CAPM LP1 analysis.
 
 Runs the complete analysis pipeline in order:
 1. Load and clean data
-2. Compute returns and excess returns
+2. Compute log and simple returns and excess returns
 3. Run CAPM regressions
 4. Generate plots and save outputs
+5. Distribution validation (log + simple)
+6. Residual histograms (log + simple)
+7. CAPM validation summary
 
 Can be executed as:
   python -m src.run_all
@@ -28,7 +31,7 @@ returns = importlib.import_module('02_returns_and_excess')
 regressions = importlib.import_module('03_regressions')
 plots = importlib.import_module('06_plots')
 
-# Extract what we need
+# Extract what we need from config
 ensure_dirs = config.ensure_dirs
 DATA_DIR = config.DATA_DIR
 REPORT_DIR = config.REPORT_DIR
@@ -61,12 +64,21 @@ sanity_check = master_summary.sanity_check
 save_master_summary = master_summary.save_master_summary
 create_all_residual_plots = residual_plots.create_all_residual_plots
 
+# Import new validation modules
+dist_validation = importlib.import_module('10_distribution_validation')
+residual_hists = importlib.import_module('11_residual_histograms')
+capm_validation = importlib.import_module('12_capm_validation_summary')
+
+run_distribution_validation = dist_validation.run_distribution_validation
+save_distribution_tests = dist_validation.save_distribution_tests
+create_all_residual_histograms = residual_hists.create_all_residual_histograms
+
 
 def run_pipeline():
     """Execute the complete CAPM analysis pipeline."""
     
     print("=" * 70)
-    print("CAPM LP1 ANALYSIS - MASTER PIPELINE")
+    print("CAPM LP1 ANALYSIS - MASTER PIPELINE (with distribution & validation)")
     print("=" * 70)
     
     # Ensure output directories exist
@@ -85,21 +97,21 @@ def run_pipeline():
         print(f"  ✗ Error loading data: {e}")
         return False
     
-    # Step 2: Compute returns and excess returns
-    print("\n[STEP 2] Computing log returns and excess returns...")
+    # Step 2: Compute returns and excess returns (LOG and SIMPLE)
+    print("\n[STEP 2] Computing log returns + simple returns and excess returns...")
     try:
         df = compute_returns_and_excess(df)
-        print(f"  ✓ Computed returns and excess returns")
+        print(f"  ✓ Computed all return types and excess returns")
     except Exception as e:
         print(f"  ✗ Error computing returns: {e}")
         return False
     
-    # Step 3: Run CAPM regressions (OLS and HAC)
+    # Step 3: Run CAPM regressions (OLS and HAC) - uses log returns (existing)
     print("\n[STEP 3] Running CAPM OLS regressions (with HAC robust inference)...")
     try:
         results_ols_df, results_hac_df, models = capm_regression_all_assets(df)
         ols_file, hac_file = save_regression_results(results_ols_df, results_hac_df)
-        print(f"  ✓ Completed regressions for {len(models)} assets")
+        print(f"  ✓ Completed regressions for {len(models)} assets (LOG returns)")
     except Exception as e:
         print(f"  ✗ Error running regressions: {e}")
         return False
@@ -118,7 +130,7 @@ def run_pipeline():
     print("\n[STEP 4] Generating scatter plots with fit lines...")
     try:
         saved_plots = create_all_scatter_plots(df, models)
-        print(f"  ✓ Generated {len(saved_plots)} plots")
+        print(f"  ✓ Generated {len(saved_plots)} scatter plots")
     except Exception as e:
         print(f"  ✗ Error generating plots: {e}")
         return False
@@ -168,19 +180,70 @@ def run_pipeline():
         print(f"  ✗ Error generating residual plots: {e}")
         return False
     
+    # Step 9: Distribution validation (LOG + SIMPLE returns)
+    print("\n[STEP 9] Running distribution validation (LOG + SIMPLE returns)...")
+    try:
+        dist_results_df = run_distribution_validation(df)
+        dist_file = save_distribution_tests(dist_results_df)
+        print(f"  ✓ Completed distribution validation for all assets")
+    except Exception as e:
+        print(f"  ✗ Error running distribution validation: {e}")
+        return False
+    
+    # Step 10: Create residual histograms (LOG + SIMPLE returns)
+    print("\n[STEP 10] Creating residual histograms (LOG + SIMPLE returns)...")
+    try:
+        histogram_paths = create_all_residual_histograms(df)
+        print(f"  ✓ Generated {len(histogram_paths)} residual histogram plots")
+    except Exception as e:
+        print(f"  ✗ Error creating histograms: {e}")
+        return False
+    
+    # Step 11: Build CAPM validation summary
+    print("\n[STEP 11] Building CAPM validation summary (LOG + SIMPLE)...")
+    try:
+        validation_results = capm_validation.main.__wrapped__() if hasattr(capm_validation.main, '__wrapped__') else None
+        if validation_results is None:
+            # Call the main function which handles everything
+            import types
+            
+            # Capture the output by importing functions directly
+            hac_log_df = capm_validation.load_hac_results_log()
+            hac_simple_df = capm_validation.compute_hac_results_simple(df)
+            diag_df = capm_validation.load_diagnostics()
+            subperiod_df = capm_validation.load_subperiod_results()
+            dist_df = capm_validation.load_distribution_tests()
+            
+            validation_summary_df = capm_validation.build_validation_summary(
+                hac_log_df, hac_simple_df, diag_df, subperiod_df, dist_df
+            )
+            validation_file = capm_validation.save_validation_summary(validation_summary_df)
+            print(f"  ✓ Completed CAPM validation summary")
+    except Exception as e:
+        print(f"  ✗ Error building validation summary: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    
     # Summary
     print("\n" + "=" * 70)
     print("PIPELINE COMPLETED SUCCESSFULLY")
     print("=" * 70)
     
     print("\n[OUTPUT SUMMARY]")
-    print(f"\nRegression & Analysis Tables:")
+    print(f"\nRegression & Analysis Tables (Existing):")
     print(f"  {ols_file}")
     print(f"  {hac_file}")
     print(f"  {stats_file}")
     print(f"  {TABLE_DIR / 'capm_diagnostics.csv'}")
     print(f"  {TABLE_DIR / 'capm_subperiod_results.csv'}")
     print(f"  {master_file} *** MASTER SUMMARY ***")
+    
+    print(f"\nNew: Distribution & Validation Tables:")
+    print(f"  {TABLE_DIR / 'residual_distribution_tests.csv'}")
+    print(f"  {TABLE_DIR / 'capm_validation_summary.csv'}")
+    print(f"  {TABLE_DIR / 'capm_excess_log.csv'} (intermediate)")
+    print(f"  {TABLE_DIR / 'capm_excess_simple.csv'} (intermediate)")
     
     print(f"\nCharacteristic Line Scatter Plots (PNG):")
     for plot_path in saved_plots:
@@ -194,9 +257,28 @@ def run_pipeline():
     for plot_path in residual_plot_paths:
         print(f"  {plot_path}")
     
+    print(f"\nNew: Residual Histograms (LOG + SIMPLE) (PNG):")
+    for plot_path in histogram_paths:
+        print(f"  {plot_path}")
+    
     print(f"\nData shape: {df.shape}")
-    print(f"Number of assets analyzed: {len(models)}")
     print(f"Analysis period: {df['Date'].min().date()} to {df['Date'].max().date()}")
+    
+    print("\n[FIRST ROWS OF NEW OUTPUTS]")
+    
+    print("\nResidual Distribution Tests (first 4 rows):")
+    try:
+        dist_summary = pd.read_csv(TABLE_DIR / 'residual_distribution_tests.csv')
+        print(dist_summary.head(4).to_string(index=False))
+    except Exception as e:
+        print(f"  (Could not load: {e})")
+    
+    print("\nCAP Validation Summary (first 4 rows):")
+    try:
+        val_summary = pd.read_csv(TABLE_DIR / 'capm_validation_summary.csv')
+        print(val_summary.head(4).to_string(index=False))
+    except Exception as e:
+        print(f"  (Could not load: {e})")
     
     print("\n" + "=" * 70)
     
@@ -204,5 +286,7 @@ def run_pipeline():
 
 
 if __name__ == "__main__":
+    # Import pandas for summary output
+    import pandas as pd
     success = run_pipeline()
     sys.exit(0 if success else 1)

@@ -58,6 +58,7 @@ def clean_column_names(df: pd.DataFrame) -> pd.DataFrame:
     """
     Remove spaces and standardize column names.
     Handle prefixes like "Close-" in findat.csv.
+    Standardize asset names to uppercase (MSFT, GE, FORD).
     
     Args:
         df: Input DataFrame
@@ -78,9 +79,9 @@ def clean_column_names(df: pd.DataFrame) -> pd.DataFrame:
     col_mapping = {
         'Sp500': 'SP500',
         'Tbill': 'Tbill',
-        'Msft': 'Msft',
+        'Msft': 'MSFT',
         'Ge': 'GE', 
-        'Ford': 'Ford'
+        'Ford': 'FORD'
     }
     
     # Rename if matches

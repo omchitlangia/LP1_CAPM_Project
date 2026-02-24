@@ -27,7 +27,7 @@ try:
     FIG_DIR = config.FIG_DIR
     TABLE_DIR = config.TABLE_DIR
 except (ImportError, ModuleNotFoundError):
-    ASSETS = ["Msft", "GE", "Ford"]
+    ASSETS = ["MSFT", "GE", "FORD"]
     MARKET_TICKER = "SP500"
     FIG_DIR = Path(__file__).parent.parent / "report" / "figures"
     TABLE_DIR = Path(__file__).parent.parent / "report" / "tables"

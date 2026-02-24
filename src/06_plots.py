@@ -24,7 +24,7 @@ try:
     FIG_DIR = config.FIG_DIR
 except (ImportError, ModuleNotFoundError):
     # Fallback defaults
-    ASSETS = ["Msft", "GE", "Ford"]
+    ASSETS = ["MSFT", "GE", "FORD"]
     MARKET_TICKER = "SP500"
     FIG_DIR = Path(__file__).parent.parent / "report" / "figures"
 

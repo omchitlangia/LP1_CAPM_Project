@@ -27,7 +27,7 @@ try:
     HAC_LAGS = config.HAC_LAGS
 except (ImportError, ModuleNotFoundError):
     # Fallback defaults
-    ASSETS = ["Msft", "GE", "Ford"]
+    ASSETS = ["MSFT", "GE", "FORD"]
     MARKET_TICKER = "SP500"
     TABLE_DIR = Path(__file__).parent.parent / "report" / "tables"
     SIGNIFICANCE_LEVEL = 0.05

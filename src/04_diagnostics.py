@@ -27,7 +27,7 @@ try:
     TABLE_DIR = config.TABLE_DIR
     SIGNIFICANCE_LEVEL = config.SIGNIFICANCE_LEVEL
 except (ImportError, ModuleNotFoundError):
-    ASSETS = ["Msft", "GE", "Ford"]
+    ASSETS = ["MSFT", "GE", "FORD"]
     MARKET_TICKER = "SP500"
     TABLE_DIR = Path(__file__).parent.parent / "report" / "tables"
     SIGNIFICANCE_LEVEL = 0.05

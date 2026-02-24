@@ -25,7 +25,7 @@ try:
     MARKET_TICKER = config.MARKET_TICKER
     TABLE_DIR = config.TABLE_DIR
 except (ImportError, ModuleNotFoundError):
-    ASSETS = ["Msft", "GE", "Ford"]
+    ASSETS = ["MSFT", "GE", "FORD"]
     MARKET_TICKER = "SP500"
     TABLE_DIR = Path(__file__).parent.parent / "report" / "tables"
 
