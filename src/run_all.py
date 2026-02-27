@@ -68,10 +68,12 @@ create_all_residual_plots = residual_plots.create_all_residual_plots
 dist_validation = importlib.import_module('10_distribution_validation')
 residual_hists = importlib.import_module('11_residual_histograms')
 capm_validation = importlib.import_module('12_capm_validation_summary')
+fullperiod_summary = importlib.import_module('13_fullperiod_summary')
 
 run_distribution_validation = dist_validation.run_distribution_validation
 save_distribution_tests = dist_validation.save_distribution_tests
 create_all_residual_histograms = residual_hists.create_all_residual_histograms
+build_fullperiod_outputs = fullperiod_summary.main
 
 
 def run_pipeline():
@@ -124,6 +126,18 @@ def run_pipeline():
         print(f"  ✓ Completed descriptive statistics")
     except Exception as e:
         print(f"  ✗ Error computing descriptive statistics: {e}")
+        return False
+    
+    # Step 3.6: Build full-period regression outputs
+    print("\n[STEP 3.6] Building full-period regression summary...")
+    try:
+        fullperiod_summary_df = build_fullperiod_outputs()
+        fullperiod_ols_file = TABLE_DIR / "capm_fullperiod_results_ols.csv"
+        fullperiod_hac_file = TABLE_DIR / "capm_fullperiod_results_hac.csv"
+        fullperiod_summary_file = TABLE_DIR / "capm_fullperiod_summary.csv"
+        print(f"  ✓ Completed full-period regression outputs")
+    except Exception as e:
+        print(f"  ✗ Error building full-period outputs: {e}")
         return False
     
     # Step 4: Generate plots
@@ -231,7 +245,7 @@ def run_pipeline():
     print("=" * 70)
     
     print("\n[OUTPUT SUMMARY]")
-    print(f"\nRegression & Analysis Tables (Existing):")
+    print(f"\nRegression & Analysis Tables (Main):")
     print(f"  {ols_file}")
     print(f"  {hac_file}")
     print(f"  {stats_file}")
@@ -239,7 +253,12 @@ def run_pipeline():
     print(f"  {TABLE_DIR / 'capm_subperiod_results.csv'}")
     print(f"  {master_file} *** MASTER SUMMARY ***")
     
-    print(f"\nNew: Distribution & Validation Tables:")
+    print(f"\nFull-Period Regression Tables (Explicit whole-sample):")
+    print(f"  {fullperiod_ols_file}")
+    print(f"  {fullperiod_hac_file}")
+    print(f"  {fullperiod_summary_file}")
+    
+    print(f"\nDistribution & Validation Tables:")
     print(f"  {TABLE_DIR / 'residual_distribution_tests.csv'}")
     print(f"  {TABLE_DIR / 'capm_validation_summary.csv'}")
     print(f"  {TABLE_DIR / 'capm_excess_log.csv'} (intermediate)")
@@ -265,6 +284,13 @@ def run_pipeline():
     print(f"Analysis period: {df['Date'].min().date()} to {df['Date'].max().date()}")
     
     print("\n[FIRST ROWS OF NEW OUTPUTS]")
+    
+    print("\nFull-Period Summary (all rows):")
+    try:
+        fullperiod_summary_df = pd.read_csv(fullperiod_summary_file)
+        print(fullperiod_summary_df.to_string(index=False))
+    except Exception as e:
+        print(f"  (Could not load: {e})")
     
     print("\nResidual Distribution Tests (first 4 rows):")
     try:

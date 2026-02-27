@@ -1,0 +1,4 @@
+Asset,Alpha_HAC,Alpha_p_HAC,Beta_HAC,R2,Key_Interpretation
+MSFT,0.0006962171644343,0.0740802723264273,1.2444926604191349,0.3433629242668291,Alpha not significant → CAPM not rejected in alpha-test sense over full period. HAC used due to daily data diagnostics.
+GE,0.0003100969517514,0.1713454514527023,1.2441284248981808,0.559117541063713,Alpha not significant → CAPM not rejected in alpha-test sense over full period. HAC used due to daily data diagnostics.
+FORD,-0.0002769313311904,0.4366730813909222,0.9731734515305748,0.2399967508771696,Alpha not significant → CAPM not rejected in alpha-test sense over full period. HAC used due to daily data diagnostics.

@@ -29,6 +29,8 @@ LP1_CAPM_Project/
 │   ├── 10_distribution_validation.py  # Residual distribution tests (LOG + SIMPLE)
 │   ├── 11_residual_histograms.py      # Residual histograms (LOG + SIMPLE)
 │   ├── 12_capm_validation_summary.py  # CAPM validation table (LOG + SIMPLE)
+│   ├── 13_fullperiod_summary.py       # Full-period (no breaks) regression summary
+│   ├── utils_io.py                    # I/O utilities (file aliasing, existence checks)
 │   └── run_all.py                     # Master pipeline orchestrator
 │
 ├── notebooks/                         # Jupyter notebooks
@@ -44,10 +46,13 @@ LP1_CAPM_Project/
     │   ├── capm_subperiod_results.csv
     │   ├── descriptive_stats.csv
     │   ├── capm_master_summary.csv
-    │   ├── capm_excess_log.csv        # NEW: Log excess returns
-    │   ├── capm_excess_simple.csv     # NEW: Simple excess returns
-    │   ├── residual_distribution_tests.csv  # NEW: Residual dist. stats
-    │   └── capm_validation_summary.csv      # NEW: Validation summary (LOG+SIMPLE)
+    │   ├── capm_fullperiod_results_ols.csv    # NEW: Full-period OLS regression results
+    │   ├── capm_fullperiod_results_hac.csv    # NEW: Full-period HAC regression results
+    │   ├── capm_fullperiod_summary.csv        # NEW: Full-period summary with interpretation
+    │   ├── capm_excess_log.csv        # Log excess returns
+    │   ├── capm_excess_simple.csv     # Simple excess returns
+    │   ├── residual_distribution_tests.csv  # Residual distribution statistics
+    │   └── capm_validation_summary.csv      # Validation summary (LOG+SIMPLE)
     └── figures/                       # Output figures (PNG)
         ├── MSFT_scatter.png
         ├── GE_scatter.png
@@ -112,10 +117,11 @@ python src/run_all.py
 After running the pipeline, check key outputs:
 
 - **Regression Results (Log Returns):** `report/tables/capm_regression_results_hac.csv`
+- **Full-Period Regression Results (NEW):** `report/tables/capm_fullperiod_results_hac.csv`, `capm_fullperiod_summary.csv`
 - **Scatter Plots:** `report/figures/MSFT_scatter.png`, `report/figures/GE_scatter.png`, `report/figures/FORD_scatter.png`
-- **NEW - Distribution Tests:** `report/tables/residual_distribution_tests.csv` (log & simple returns)
-- **NEW - Validation Summary:** `report/tables/capm_validation_summary.csv` (log & simple returns)
-- **NEW - Residual Histograms:** `report/figures/{ASSET}_residual_hist_{LOG|SIMPLE}.png` (6 total)
+- **Distribution Tests:** `report/tables/residual_distribution_tests.csv` (log & simple returns)
+- **Validation Summary:** `report/tables/capm_validation_summary.csv` (log & simple returns)
+- **Residual Histograms:** `report/figures/{ASSET}_residual_hist_{LOG|SIMPLE}.png` (6 total)
 
 ---
 
@@ -305,20 +311,44 @@ Comprehensive CAPM validation combining results from all modules:
   - Beta_stability_range
   - CAPM_validated_statement (interpretation)
 
+### `13_fullperiod_summary.py` (NEW)
+Creates explicit full-period (whole-sample, no breaks) regression outputs:
+- Aliases full-sample regression results into clearly-named fullperiod files
+- Uses `ensure_alias_output()` from utils_io to copy if destination missing
+- Builds interpretation summary based on alpha significance (HAC p-value, 5% level)
+- **Main Function:** `main()` → returns summary_df
+- **Outputs:**
+  - `capm_fullperiod_results_ols.csv` – Full-period OLS regression results (copy of capm_regression_results_ols.csv)
+  - `capm_fullperiod_results_hac.csv` – Full-period HAC regression results (copy of capm_regression_results_hac.csv)
+  - `capm_fullperiod_summary.csv` – Interpretation summary
+- **Summary Columns:**
+  - Asset
+  - Alpha_HAC, Alpha_p_HAC, Beta_HAC, R2
+  - Key_Interpretation ("Alpha not/significant → CAPM not/rejected... HAC used due to daily data diagnostics.")
+- **FORCE_REBUILD Aware:** Skips aliasing unless files missing or FORCE_REBUILD=True
+
+### `utils_io.py` (NEW)
+File I/O utilities for the pipeline:
+- **`ensure_alias_output(src_path, dst_path, force=None)`** – Copy source to destination if destination missing. Respects FORCE_REBUILD.
+- **`file_exists(path)`** – Check if path is a file
+- **`should_generate(output_path, force=None)`** – Determine if output should be regenerated
+- Used by 13_fullperiod_summary.py and future modules to manage file caching
+
 ### `run_all.py`
 Master pipeline that orchestrates all steps with existence checking (skips already-generated files unless FORCE_REBUILD=True):
 1. Load and clean data
 2. Compute log + simple returns and excess returns
 3. Run CAPM regressions (log returns)
 4. Compute descriptive statistics
-5. Generate scatter plots
-6. Run diagnostic tests
-7. Run robustness checks (sub-period, rolling beta)
-8. Build master summary table
-9. Generate residual diagnostic plots
-10. **Distribution validation (LOG + SIMPLE return types)**
-11. **Create residual histograms (LOG + SIMPLE return types)**
-12. **Build CAPM validation summary (LOG + SIMPLE return types)**
+5. **Build full-period regression outputs (NEW)**
+6. Generate scatter plots
+7. Run diagnostic tests
+8. Run robustness checks (sub-period, rolling beta)
+9. Build master summary table
+10. Generate residual diagnostic plots
+11. Distribution validation (LOG + SIMPLE return types)
+12. Create residual histograms (LOG + SIMPLE return types)
+13. Build CAPM validation summary (LOG + SIMPLE return types)
 
 
 ---
